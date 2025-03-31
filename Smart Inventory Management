@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdexcept>
+#include <limits>
 using namespace std;
 #define MAX_PRODUCTS 100
 class Product {
@@ -22,8 +23,8 @@ public:
     }
     bool operator>(const Product &p) const { return price > p.price; }
     bool operator<(const Product &p) const { return price < p.price; }
-    int getId() const { return id; } // Getter for id
-    int getStock() const { return stock; } // Getter for stock
+    int getId() const { return id; }
+    int getStock() const { return stock; }
 };
 class Electronics : public Product {
 private:
@@ -45,9 +46,58 @@ public:
         cout << "Expiry Date: " << expiryDate << endl;
     }
 };
+Product *products[MAX_PRODUCTS];
+int prodCount = 0;
+bool isIdExists(int id) {
+    for (int i = 0; i < prodCount; i++) {
+        if (products[i]->getId() == id) {
+            return true;
+        }
+    }
+    return false;
+}
+void validateInput(double& value, const string& prompt) {
+    while (true) {
+        cout << prompt;
+        cin >> value;
+        if (cin.fail() || value < 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input! Please enter a valid positive number." << endl;
+        } else break;
+    }
+}
+void validateInput(int& value, const string& prompt) {
+    while (true) {
+        cout << prompt;
+        cin >> value;
+        if (cin.fail() || value < 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input! Please enter a valid positive integer." << endl;
+        } else break;
+    }
+}
+void searchProduct(int id) {
+    for (int i = 0; i < prodCount; i++) {
+        if (products[i]->getId() == id) {
+            products[i]->display();
+            return;
+        }
+    }
+    cout << "Product not found!" << endl;
+}
+void sortProducts() {
+    for (int i = 0; i < prodCount - 1; i++) {
+        for (int j = 0; j < prodCount - i - 1; j++) {
+            if (*products[j] > *products[j + 1]) {
+                swap(products[j], products[j + 1]);
+            }
+        }
+    }
+    cout << "Products sorted by price." << endl;
+}
 int main() {
-    Product *products[MAX_PRODUCTS];
-    int prodCount = 0;
     int choice;
     do {
         cout << "\nInventory Management System" << endl;
@@ -56,76 +106,64 @@ int main() {
         cout << "3. Display Products" << endl;
         cout << "4. Update Stock" << endl;
         cout << "5. Delete Product" << endl;
-        cout << "6. Exit" << endl;
+        cout << "6. Search Product" << endl;
+        cout << "7. Sort Products by Price" << endl;
+        cout << "8. Exit" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        if (choice == 1 && prodCount < MAX_PRODUCTS) {
+        if (choice == 1 || choice == 2) {
+            if (prodCount >= MAX_PRODUCTS) {
+                cout << "Inventory full! Cannot add more products." << endl;
+                continue;
+            }
             string name;
-            int id, stock, warranty;
-            double price;
-            cout << "Enter Name, ID, Price, Stock, Warranty: ";
-            cin >> name >> id >> price >> stock >> warranty;
-            products[prodCount++] = new Electronics(name, id, price, stock, warranty);
-        } else if (choice == 2 && prodCount < MAX_PRODUCTS) {
-            string name, expiry;
             int id, stock;
             double price;
-            cout << "Enter Name, ID, Price, Stock, Expiry Date: ";
-            cin >> name >> id >> price >> stock >> expiry;
-            products[prodCount++] = new Grocery(name, id, price, stock, expiry);
-        } else if (choice == 3) {
-            if (prodCount == 0) {
-                cout << "No products available!" << endl;
-            } else {
-                for (int i = 0; i < prodCount; i++) products[i]->display();
-            }
-        } else if (choice == 4) {
-            int id, quantity;
-            cout << "Enter Product ID and Quantity to Reduce: ";
-            cin >> id >> quantity;
-            try {
-                bool found = false;
-                for (int i = 0; i < prodCount; i++) {
-                    if (products[i]->getId() == id) {
-                        found = true;
-                        products[i]->updateStock(quantity);
-                        cout << "Stock updated successfully!" << endl;
-                        break;
-                    }
-                }
-                if (!found) {
-                    cout << "Product not found!" << endl;
-                }
-            } catch (const exception &e) {
-                cerr << e.what() << endl;
-            }
-        } else if (choice == 5) {
-            int id;
-            cout << "Enter Product ID to Delete: ";
+            cout << "Enter Product Name: ";
+            cin >> name;
+            cout << "Enter Product ID: ";
             cin >> id;
-            bool found = false;
-            for (int i = 0; i < prodCount; i++) {
-                if (products[i]->getId() == id) {
-                    found = true;
-                    delete products[i];
-                    for (int j = i; j < prodCount - 1; j++) {
-                        products[j] = products[j + 1];
-                    }
-                    prodCount--;
-                    cout << "Product deleted successfully!" << endl;
-                    break;
-                }
+            if (isIdExists(id)) {
+                cout << "Error: Product with ID " << id << " already exists!" << endl;
+                continue;
             }
-            if (!found) {
-                cout << "Product not found!" << endl;
+            validateInput(price, "Enter Product Price: ");
+            validateInput(stock, "Enter Product Stock: ");
+            if (choice == 1) {
+                int warranty;
+                cout << "Enter Warranty (years): ";
+                cin >> warranty;
+                products[prodCount++] = new Electronics(name, id, price, stock, warranty);
+            } else {
+                string expiry;
+                cout << "Enter Expiry Date (YYYY-MM-DD): ";
+                cin >> expiry;
+                products[prodCount++] = new Grocery(name, id, price, stock, expiry);
             }
-        } else if (choice == 6) {
+            cout << "Product added successfully!" << endl;
+        }
+        else if (choice == 3) {
+            if (prodCount == 0) cout << "No products available!" << endl;
+            else for (int i = 0; i < prodCount; i++) products[i]->display();
+        }
+        else if (choice == 6) {
+            int id;
+            cout << "Enter Product ID to Search: ";
+            cin >> id;
+            searchProduct(id);
+        }
+        else if (choice == 7) {
+            sortProducts();
+        }
+        else if (choice == 8) {
             cout << "Exiting program..." << endl;
-        } else {
+        }
+        else {
             cout << "Invalid choice! Please try again." << endl;
         }
-    } while (choice != 6);
+    } while (choice != 8);
 
     for (int i = 0; i < prodCount; i++) delete products[i];
     return 0;
 }
+
