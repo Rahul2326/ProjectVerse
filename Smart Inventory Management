@@ -1,0 +1,131 @@
+#include <iostream>
+#include <stdexcept>
+using namespace std;
+#define MAX_PRODUCTS 100
+class Product {
+protected:
+    string name;
+    int id;
+    double price;
+    int stock;
+public:
+    Product(string n = "", int i = 0, double p = 0.0, int s = 0) : name(n), id(i), price(p), stock(s) {}
+    virtual ~Product() {}
+    virtual void display() const {
+        cout << "ID: " << id << "\tName: " << name << "\tPrice: $" << price << "\tStock: " << stock << endl;
+    }
+    virtual void updateStock(int quantity) {
+        if (quantity > stock) {
+            throw runtime_error("Stock not sufficient!");
+        }
+        stock -= quantity;
+    }
+    bool operator>(const Product &p) const { return price > p.price; }
+    bool operator<(const Product &p) const { return price < p.price; }
+    int getId() const { return id; } // Getter for id
+    int getStock() const { return stock; } // Getter for stock
+};
+class Electronics : public Product {
+private:
+    int warranty;
+public:
+    Electronics(string n = "", int i = 0, double p = 0.0, int s = 0, int w = 0) : Product(n, i, p, s), warranty(w) {}
+    void display() const override {
+        Product::display();
+        cout << "Warranty: " << warranty << " years" << endl;
+    }
+};
+class Grocery : public Product {
+private:
+    string expiryDate;
+public:
+    Grocery(string n = "", int i = 0, double p = 0.0, int s = 0, string e = "") : Product(n, i, p, s), expiryDate(e) {}
+    void display() const override {
+        Product::display();
+        cout << "Expiry Date: " << expiryDate << endl;
+    }
+};
+int main() {
+    Product *products[MAX_PRODUCTS];
+    int prodCount = 0;
+    int choice;
+    do {
+        cout << "\nInventory Management System" << endl;
+        cout << "1. Add Electronics Product" << endl;
+        cout << "2. Add Grocery Product" << endl;
+        cout << "3. Display Products" << endl;
+        cout << "4. Update Stock" << endl;
+        cout << "5. Delete Product" << endl;
+        cout << "6. Exit" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        if (choice == 1 && prodCount < MAX_PRODUCTS) {
+            string name;
+            int id, stock, warranty;
+            double price;
+            cout << "Enter Name, ID, Price, Stock, Warranty: ";
+            cin >> name >> id >> price >> stock >> warranty;
+            products[prodCount++] = new Electronics(name, id, price, stock, warranty);
+        } else if (choice == 2 && prodCount < MAX_PRODUCTS) {
+            string name, expiry;
+            int id, stock;
+            double price;
+            cout << "Enter Name, ID, Price, Stock, Expiry Date: ";
+            cin >> name >> id >> price >> stock >> expiry;
+            products[prodCount++] = new Grocery(name, id, price, stock, expiry);
+        } else if (choice == 3) {
+            if (prodCount == 0) {
+                cout << "No products available!" << endl;
+            } else {
+                for (int i = 0; i < prodCount; i++) products[i]->display();
+            }
+        } else if (choice == 4) {
+            int id, quantity;
+            cout << "Enter Product ID and Quantity to Reduce: ";
+            cin >> id >> quantity;
+            try {
+                bool found = false;
+                for (int i = 0; i < prodCount; i++) {
+                    if (products[i]->getId() == id) {
+                        found = true;
+                        products[i]->updateStock(quantity);
+                        cout << "Stock updated successfully!" << endl;
+                        break;
+                    }
+                }
+                if (!found) {
+                    cout << "Product not found!" << endl;
+                }
+            } catch (const exception &e) {
+                cerr << e.what() << endl;
+            }
+        } else if (choice == 5) {
+            int id;
+            cout << "Enter Product ID to Delete: ";
+            cin >> id;
+            bool found = false;
+            for (int i = 0; i < prodCount; i++) {
+                if (products[i]->getId() == id) {
+                    found = true;
+                    delete products[i];
+                    for (int j = i; j < prodCount - 1; j++) {
+                        products[j] = products[j + 1];
+                    }
+                    prodCount--;
+                    cout << "Product deleted successfully!" << endl;
+                    break;
+                }
+            }
+            if (!found) {
+                cout << "Product not found!" << endl;
+            }
+        } else if (choice == 6) {
+            cout << "Exiting program..." << endl;
+        } else {
+            cout << "Invalid choice! Please try again." << endl;
+        }
+    } while (choice != 6);
+
+    for (int i = 0; i < prodCount; i++) delete products[i];
+    return 0;
+}
