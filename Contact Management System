@@ -1,0 +1,170 @@
+#include <iostream>
+#include <stdexcept>
+#include <algorithm>
+using namespace std;
+#define MAX_CONTACTS 100
+class Contact {
+protected:
+    string name;
+    string phone;
+    string email;
+public:
+    Contact(string n = "", string p = "", string e = "") : name(n), phone(p), email(e) {}
+    virtual ~Contact() {}
+    virtual void display() const {
+        cout << "Name: " << name << " | Phone: " << phone << " | Email: " << email << endl;
+    }
+    string getName() const { return name; }
+    string getPhone() const { return phone; }
+    string getEmail() const { return email; }
+    void setPhone(string p) { phone = p; }
+    void setEmail(string e) { email = e; }
+};
+class FriendContact : public Contact {
+private:
+    string birthday;
+public:
+    FriendContact(string n, string p, string e, string b) : Contact(n, p, e), birthday(b) {}
+    void display() const {
+        Contact::display();
+        cout << "Birthday: " << birthday << endl;
+    }
+};
+class BusinessContact : public Contact {
+private:
+    string company;
+    string jobTitle;
+
+public:
+    BusinessContact(string n, string p, string e, string c, string j) : Contact(n, p, e), company(c), jobTitle(j) {}
+    void display() const {
+        Contact::display();
+        cout << "Company: " << company << " | Job Title: " << jobTitle << endl;
+    }
+};
+bool isValidPhone(const string &phone) {
+    if (phone.length() != 10) return false;
+    for (char c : phone) {
+        if (!isdigit(c)) return false;
+    }
+    return true;
+}
+bool isValidEmail(const string &email) {
+    return (email.find('@') != string::npos && email.find('.') != string::npos);
+}
+void sortContacts(Contact *contacts[], int count) {
+    sort(contacts, contacts + count, [](Contact *a, Contact *b) {
+        return a->getName() < b->getName();
+    });
+}
+int main() {
+    Contact *contacts[MAX_CONTACTS];
+    int contactCount = 0;
+    int choice;
+    do {
+        cout << "\nContact Management System" << endl;
+        cout << "1. Add Friend Contact" << endl;
+        cout << "2. Add Business Contact" << endl;
+        cout << "3. Display Contacts (Sorted)" << endl;
+        cout << "4. Search Contact" << endl;
+        cout << "5. Delete Contact" << endl;
+        cout << "6. Edit Contact" << endl;
+        cout << "7. Exit" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 1 && contactCount < MAX_CONTACTS) {
+            string name, phone, email, birthday;
+            cout << "Enter Name: "; cin >> name;
+            cout << "Enter Phone: "; cin >> phone;
+            if (!isValidPhone(phone)) {
+                cout << "Invalid phone number! Must be 10 digits." << endl;
+                continue;
+            }
+            cout << "Enter Email: "; cin >> email;
+            if (!isValidEmail(email)) {
+                cout << "Invalid email format!" << endl;
+                continue;
+            }
+            cout << "Enter Birthday (DD-MM-YYYY): "; cin >> birthday;
+            contacts[contactCount++] = new FriendContact(name, phone, email, birthday);
+        } else if (choice == 2 && contactCount < MAX_CONTACTS) {
+            string name, phone, email, company, job;
+            cout << "Enter Name: "; cin >> name;
+            cout << "Enter Phone: "; cin >> phone;
+            if (!isValidPhone(phone)) {
+                cout << "Invalid phone number! Must be 10 digits." << endl;
+                continue;
+            }
+            cout << "Enter Email: "; cin >> email;
+            if (!isValidEmail(email)) {
+                cout << "Invalid email format!" << endl;
+                continue;
+            }
+            cout << "Enter Company: "; cin >> company;
+            cout << "Enter Job Title: "; cin >> job;
+            contacts[contactCount++] = new BusinessContact(name, phone, email, company, job);
+        } else if (choice == 3) {
+            sortContacts(contacts, contactCount);
+            if (contactCount == 0) {
+                cout << "No contacts available!" << endl;
+            } else {
+                for (int i = 0; i < contactCount; i++) contacts[i]->display();
+            }
+        } else if (choice == 4) {
+            string searchName;
+            cout << "Enter Name to Search: ";
+            cin >> searchName;
+            bool found = false;
+            for (int i = 0; i < contactCount; i++) {
+                if (contacts[i]->getName() == searchName) {
+                    contacts[i]->display();
+                    found = true;
+                }
+            }
+            if (!found) cout << "Contact not found!" << endl;
+        } else if (choice == 5) {
+            string deleteName;
+            cout << "Enter Name to Delete: ";
+            cin >> deleteName;
+            bool found = false;
+            for (int i = 0; i < contactCount; i++) {
+                if (contacts[i]->getName() == deleteName) {
+                    delete contacts[i];
+                    for (int j = i; j < contactCount - 1; j++) {
+                        contacts[j] = contacts[j + 1];
+                    }
+                    contactCount--;
+                    cout << "Contact deleted successfully!" << endl;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) cout << "Contact not found!" << endl;
+        } else if (choice == 6) {
+            string editName;
+            cout << "Enter Name to Edit: ";
+            cin >> editName;
+            bool found = false;
+            for (int i = 0; i < contactCount; i++) {
+                if (contacts[i]->getName() == editName) {
+                    string newPhone, newEmail;
+                    cout << "Enter new Phone: "; cin >> newPhone;
+                    cout << "Enter new Email: "; cin >> newEmail;
+                    contacts[i]->setPhone(newPhone);
+                    contacts[i]->setEmail(newEmail);
+                    cout << "Contact updated successfully!" << endl;
+                    found = true;
+                }
+            }
+            if (!found) cout << "Contact not found!" << endl;
+        } else if (choice == 7) {
+            cout << "Exiting program..." << endl;
+        } else {
+            cout << "Invalid choice! Please try again." << endl;
+        }
+    } while (choice != 7);
+
+    for (int i = 0; i < contactCount; i++) delete contacts[i];
+    return 0;
+}
